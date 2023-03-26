@@ -3,15 +3,22 @@ const models = require('../models');
 
 // get the Cat model
 const { Cat } = models;
+const { Dog } = models;
 
 // default fake data so that we have something to work with until we make a real Cat
-const defaultData = {
+const defaultDataC = {
   name: 'unknown',
   bedsOwned: 0,
 };
+const defaultDataD = {
+  name: 'unknown',
+  age: 0,
+  breed: 'labrador of the void',
+}
 
 // object for us to keep track of the last Cat we made and dynamically update it sometimes
-let lastAdded = new Cat(defaultData);
+let lastAddedC = new Cat(defaultDataC);
+let lastAddedD = new Dog(defaultDataD);
 
 // Function to handle rendering the index page.
 const hostIndex = (req, res) => {
@@ -19,7 +26,7 @@ const hostIndex = (req, res) => {
      We pass it a number of variables to populate the page.
   */
   res.render('index', {
-    currentName: lastAdded.name,
+    currentName: lastAddedC.name,
     title: 'Home',
     pageName: 'Home Page',
   });
@@ -73,6 +80,16 @@ const hostPage1 = async (req, res) => {
   }
 };
 
+const hostPage4 = async (req,res) => {
+  try{
+    const docs = await Dog.find({}).lean().exec();
+    return res.render('page4',{dogs: docs});
+  }catch(err) {
+    console.log(err);
+    return res.status(500).json({ error: 'failed to find dogs'});
+  }
+}
+
 // Function to render the untemplated page2.
 const hostPage2 = (req, res) => {
   res.render('page2');
@@ -84,17 +101,21 @@ const hostPage3 = (req, res) => {
 };
 
 // Get name will return the name of the last added cat.
-const getName = (req, res) => res.json({ name: lastAdded.name });
+const getName = (req, res) => res.json({ name: lastAddedC.name });
+const getNameD = (req,res) => res.json({name: lastAddedD.name});
 
 // Function to create a new cat in the database
-const setName = async (req, res) => {
+const setName = async (req, res, c = true) => {
   /* If we look at views/page2.handlebars, the form has inputs for a firstname, lastname
      and a number of beds. When this POST request is sent to us, the bodyParser plugin
      we configured in app.js will store that information in req.body for us.
   */
-  if (!req.body.firstname || !req.body.lastname || !req.body.beds) {
+  if ( c && (!req.body.firstname || !req.body.lastname || !req.body.beds)) {
     // If they are missing data, send back an error.
     return res.status(400).json({ error: 'firstname, lastname and beds are all required' });
+  }
+  if(!c && (!req.body.firstname || !req.body.lastname || !req.body.age || !req.body.breed)){
+    return res.status(400).json({ error: 'firstname, lastname age, and breed are all required' });
   }
 
   /* If they did send all the data, we want to create a cat and add it to our database.
@@ -102,18 +123,33 @@ const setName = async (req, res) => {
      we define a name and bedsOwned. We don't need to define the createdDate, because the
      default Date.now function will populate that value for us later.
   */
-  const catData = {
+ let data;
+ if(c){
+  data = {
     name: `${req.body.firstname} ${req.body.lastname}`,
     bedsOwned: req.body.beds,
   };
+}else{
+  data = {
+    name: `${req.body.firstname} ${req.body.lastname}`,
+    age: req.body.age,
+    breed: `${req.body.breed}`,
+  };
+}
 
+let newAnimal;
+
+if(c){
+  newAnimal = new Cat(data)
+}else{
+  newAnimal = new Dog(data)
+}
   /* Once we have our cat object set up. We want to turn it into something the database
      can understand. To do this, we create a new instance of a Cat using the Cat model
      exported from the Models folder.
 
      Note that this does NOT store the cat in the database. That is the next step.
   */
-  const newCat = new Cat(catData);
 
   /* We have now setup a cat in the right format. We now want to store it in the database.
      Again, because the database and node server are separate things entirely we have no
@@ -128,7 +164,7 @@ const setName = async (req, res) => {
        the database. All calls to the database are async, including .save() so we will await the
        databases response. If something goes wrong, we will end up in our catch() statement.
     */
-    await newCat.save();
+    await newAnimal.save();
   } catch (err) {
     /* If something goes wrong while communicating with the database, log the error and send
        an error message back to the client. Note that our return will return us from the setName
@@ -136,22 +172,32 @@ const setName = async (req, res) => {
        as being our "if the try worked"
     */
     console.log(err);
-    return res.status(500).json({ error: 'failed to create cat' });
+    return res.status(500).json({ error: 'failed to create animal' });
   }
 
   /* After our await has resolved, and if no errors have occured during the await, we will end
      up here. We will update our lastAdded cat to the one we just added. We will then send that
      cat's data to the client.
   */
-  lastAdded = newCat;
+ if(c){
+  lastAddedC = newAnimal;
   return res.json({
-    name: lastAdded.name,
-    beds: lastAdded.bedsOwned,
+    name: lastAddedC.name,
+    beds: lastAddedC.bedsOwned,
   });
+ }else{
+  lastAddedD = newAnimal
+  return res.json({
+    name: lastAddedD.name,
+    age: lastAddedD.age,
+    breed: lastAddedD.breed,
+  });
+ }
+
 };
 
 // Function to handle searching a cat by name.
-const searchName = async (req, res) => {
+const searchName = async (req, res, c = true) => {
   /* When the user makes a POST request, bodyParser populates req.body with the parameters
      as we saw in setName() above. In the case of searchName, the user is making a GET request.
      GET requests do not have a body, but they can have query parameters. bodyParser will also
@@ -181,7 +227,11 @@ const searchName = async (req, res) => {
             doc object.
         3) Everything works, and an object matching the search is found.
     */
+   if(c){
     doc = await Cat.findOne({ name: req.query.name }).exec();
+   }else{
+    doc = await Dog.findOne({ name: req.query.name }).exec();
+   }
   } catch (err) {
     // If there is an error, log it and send the user an error message.
     console.log(err);
@@ -190,11 +240,15 @@ const searchName = async (req, res) => {
 
   // If we do not find something that matches our search, doc will be empty.
   if (!doc) {
-    return res.json({ error: 'No cats found' });
+    return res.json({ error: 'No animals found' });
   }
 
   // Otherwise, we got a result and will send it back to the user.
+  if(c){
   return res.json({ name: doc.name, beds: doc.bedsOwned });
+  }else{
+    return res.json({ name: doc.name, age: doc.age, breed: doc.breed });
+  }
 };
 
 /* A function for updating the last cat added to the database.
@@ -202,9 +256,13 @@ const searchName = async (req, res) => {
    the right element in the database based on query, modifying it, and updating
    it. For this example we will just update the last one we added for simplicity.
 */
-const updateLast = (req, res) => {
+const updateLast = (req, res, c = true) => {
   // First we will update the number of bedsOwned.
-  lastAdded.bedsOwned++;
+  if(c){
+  lastAddedC.bedsOwned++;
+  }else{
+    lastAddedD.age++;
+  }
 
   /* Remember that lastAdded is a Mongoose document (made on line 14 if no new
      ones were made after the server started, or line 116 if there was). Mongo
@@ -219,13 +277,23 @@ const updateLast = (req, res) => {
 
      We can use async/await for this, or just use standard promise .then().catch() syntax.
   */
-  const savePromise = lastAdded.save();
+ let savePromise;
+ if(c){
+   savePromise = lastAddedC.save();
+   savePromise.then(() => res.json({
+    name: lastAddedC.name,
+    beds: lastAddedC.bedsOwned,
+  }));
+ }else{
+  savePromise = lastAddedD.save();
+  savePromise.then(() => res.json({
+    name: lastAddedD.name,
+    age: lastAddedD.age,
+    breed: lastAddedD.breed,
+  }));
+ }
 
   // If we successfully save/update them in the database, send back the cat's info.
-  savePromise.then(() => res.json({
-    name: lastAdded.name,
-    beds: lastAdded.bedsOwned,
-  }));
 
   // If something goes wrong saving to the database, log the error and send a message to the client.
   savePromise.catch((err) => {
@@ -241,6 +309,17 @@ const notFound = (req, res) => {
   });
 };
 
+const dogSetName = (req,res) => {
+  setName(req,res, false);
+} 
+const dogUpdateLast = (req,res) => {
+  updateLast(req,res,false);
+}
+
+const dogSearchName = (req,res) => {
+  searchName(req,res,false);
+}
+
 // export the relevant public controller functions
 module.exports = {
   index: hostIndex,
@@ -248,8 +327,13 @@ module.exports = {
   page2: hostPage2,
   page3: hostPage3,
   getName,
+  getNameD,
   setName,
   updateLast,
   searchName,
   notFound,
+  dogSearchName,
+  dogSetName,
+  dogUpdateLast,
+  page4:hostPage4,
 };

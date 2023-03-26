@@ -10,7 +10,7 @@ const mongoose = require('mongoose');
 // A mongoDB model is a Mongo database structure with the API attached
 // That is, a model has built-in functions for its data structure like find, findOne, etc.
 // Usually you will retrieve data from the database through the Model object
-let CatModel = {};
+let DogModel = {};
 
 /* While Mongo is a schema-less database, meaning we can just store arbitrary objects in it,
    Mongoose does implement a schema system. If you wanted to just store arbitrary objects you
@@ -40,15 +40,21 @@ let CatModel = {};
    it's default to the Date.now function. When a new cat is made, it will execute the default
    function and return the current date.
 */
-const CatSchema = new mongoose.Schema({
+const DogSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
     trim: true,
     unique: true,
   },
+  breed: {
+    type: String,
+    required: true,
+    trim: true,
+    unique: true,
+  },
 
-  bedsOwned: {
+  age: {
     type: Number,
     min: 0,
     required: true,
@@ -64,7 +70,7 @@ const CatSchema = new mongoose.Schema({
 // (the name of the object type. Can be anything)
 // and the schema to make a model from.
 // Look at the model variable definition above for more details.
-CatModel = mongoose.model('Cat', CatSchema);
+DogModel = mongoose.model('Dog', DogSchema);
 
 // We only want to export the cat model, so we can overwrite the entire exports object.
-module.exports = CatModel;
+module.exports = DogModel;
