@@ -18,16 +18,6 @@ const expressHandlebars = require('express-handlebars');
 // In MVC, you have 'routes' that line up URLs to controller methods
 const router = require('./router.js');
 
-
-const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = "mongodb+srv://nds5465:flOIq6iafe7Vnfwu@gandls.0sugxct.mongodb.net/?retryWrites=true&w=majority";
-const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
-client.connect(err => {
-  const collection = client.db("test").collection("devices");
-  // perform actions on the collection object
-  client.close();
-});
-
 // MONGODB address to connect to.
 // process.env.MONGODB_URI is the variable created by Heroku from
 // your Config Vars in the Heroku Dashboard > Settings > Config Vars section.
