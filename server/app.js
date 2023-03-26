@@ -33,8 +33,7 @@ client.connect(err => {
 // your Config Vars in the Heroku Dashboard > Settings > Config Vars section.
 // otherwise fallback to localhost.
 // The string after mongodb://localhost is the database name. It can be anything you want.
-const dbURI = 'mongodb+srv://nds5465:flOIq6iafe7Vnfwu@gandls.0sugxct.mongodb.net/SimpleModels?retryWrites=true&w=majority';
-console.log(dbURI);
+const dbURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1/simpleMVCExample';
 
 // call mongoose's connect function and pass in the url.
 // If there are any errors connecting, we will throw it and kill the server.
