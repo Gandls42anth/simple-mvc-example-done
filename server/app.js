@@ -20,7 +20,7 @@ const router = require('./router.js');
 
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = "mongodb+srv://nds5465:flOIq6iafe7Vnfwu@gandls.0sugxct.mongodb.net/SimpleModels?retryWrites=true&w=majority";
+const uri = "mongodb+srv://nds5465:flOIq6iafe7Vnfwu@gandls.0sugxct.mongodb.net/?retryWrites=true&w=majority";
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 client.connect(err => {
   const collection = client.db("test").collection("devices");
@@ -34,6 +34,7 @@ client.connect(err => {
 // otherwise fallback to localhost.
 // The string after mongodb://localhost is the database name. It can be anything you want.
 const dbURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1/simpleMVCExample';
+console.log(dbURI);
 
 // call mongoose's connect function and pass in the url.
 // If there are any errors connecting, we will throw it and kill the server.
